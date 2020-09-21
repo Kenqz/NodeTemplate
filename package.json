@@ -1,0 +1,25 @@
+{
+  "name": "template",
+  "version": "1.0.0",
+  "description": "Basic Template for node.js applications.",
+  "main": "./bin/www.js",
+  "bin": {
+    "template": "www.js"
+  },
+  "scripts": {
+    "dev": "nodemon --signal SIGHUP --exec babel-node ./bin/www",
+    "start": "node ./bin/www"
+  },
+  "author": "TroyDota",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.11.6",
+    "@babel/node": "^7.10.5",
+    "babel-node": "0.0.1-security",
+    "nodemon": "^2.0.4"
+  },
+  "dependencies": {
+    "winston": "^3.3.3",
+    "winston-console-format": "^1.0.8"
+  }
+}
