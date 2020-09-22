@@ -19,6 +19,8 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
+    "redis": "^3.0.2",
+    "redis-lock": "^0.1.4",
     "winston": "^3.3.3",
     "winston-console-format": "^1.0.8"
   }
