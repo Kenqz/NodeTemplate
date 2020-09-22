@@ -1,4 +1,3 @@
-const nrp = require("./index");
 const process = require("process");
 const schedule = require("node-schedule");
 const nodeID = ((length) => {
@@ -14,66 +13,67 @@ const nodeID = ((length) => {
 })(10);
 const logger = require("../logger")(module);
 
-nrp.on(
-  `node:${nodeID}:request`,
-  (data) => {
-    data = JSON.parse(data);
-    if (data.message === "PING")
-      nrp.emit(
-        `node:${nodeID}:callback`,
-        JSON.stringify({
-          message: "PONG",
-        })
-      );
-  },
-  (event) => {
-    logger.info(`Listening to event "${event}"`);
-  }
-);
-
-async function getActiveNodes() {
-  let activeNodes = await nrp.get("active-nodes");
-  if (!activeNodes) return {};
-  return JSON.parse(activeNodes);
-}
-
-module.exports = {
-  nodeID,
-  async activateNode() {
-    let unlock = await nrp.lock("active-nodes");
-    try {
-      let activeNodes = await getActiveNodes();
-      activeNodes[nodeID] = true;
-      await nrp.set("active-nodes", JSON.stringify(activeNodes));
-    } finally {
-      unlock();
+module.exports = (nrp) => {
+  nrp.on(
+    `node:${nodeID}:request`,
+    (data) => {
+      data = JSON.parse(data);
+      if (data.message === "PING")
+        nrp.emit(
+          `node:${nodeID}:callback`,
+          JSON.stringify({
+            message: "PONG",
+          })
+        );
+    },
+    (event) => {
+      logger.info(`Listening to event "${event}"`);
     }
-    let scheduleFunction = (date) => {
-      schedule.scheduleJob(date, async () => {
-        let nodeList = await getActiveNodes();
-        if (!nodeList[nodeID]) {
-          logger.error("Rogue node deteceted stopping...");
-          process.exit();
-        }
-        scheduleFunction(new Date(Date.now() + 330));
+  );
+
+  async function getActiveNodes() {
+    let activeNodes = await nrp.get("active-nodes");
+    if (!activeNodes) return {};
+    return JSON.parse(activeNodes);
+  }
+  return {
+    nodeID,
+    async activateNode() {
+      let unlock = await nrp.lock("active-nodes");
+      try {
+        let activeNodes = await getActiveNodes();
+        activeNodes[nodeID] = true;
+        await nrp.set("active-nodes", JSON.stringify(activeNodes));
+      } finally {
+        unlock();
+      }
+      let scheduleFunction = (date) => {
+        schedule.scheduleJob(date, async () => {
+          let nodeList = await getActiveNodes();
+          if (!nodeList[nodeID]) {
+            logger.error("Rogue node deteceted stopping...");
+            process.exit();
+          }
+          scheduleFunction(new Date(Date.now() + 330));
+        });
+      };
+      scheduleFunction(new Date(Date.now() + 330));
+    },
+    async deactivateNode() {
+      await new Promise((resolve) => {
+        nrp.emit(
+          `deactivate-node`,
+          JSON.stringify({
+            id: nodeID,
+          }),
+          (event) => {
+            logger.debug(`Emitted event "${event}"`);
+            logger.info(`Stopped redis node with id "${nodeID}"`);
+            resolve();
+          }
+        );
       });
-    };
-    scheduleFunction(new Date(Date.now() + 330));
-  },
-  async deactivateNode() {
-    await new Promise((resolve) => {
-      nrp.emit(
-        `deactivate-node`,
-        JSON.stringify({
-          id: nodeID,
-        }),
-        (event) => {
-          logger.debug(`Emitted event "${event}"`);
-          logger.info(`Stopped redis node with id "${nodeID}"`);
-          resolve();
-        }
-      );
-    });
-  },
-  getActiveNodes,
+    },
+    getActiveNodes,
+  };
 };

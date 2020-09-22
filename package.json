@@ -19,6 +19,7 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
+    "node-scheduler": "^1.0.0",
     "redis": "^3.0.2",
     "redis-lock": "^0.1.4",
     "winston": "^3.3.3",

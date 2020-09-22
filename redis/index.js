@@ -166,8 +166,8 @@ class NRP extends EventEmitter {
     if (callback) callback(channel);
   }
 }
-
+let nrp = new NRP(lock, gettorSettor, subscriber, publisher);
 module.exports = {
-  nrp: new NRP(lock, gettorSettor, subscriber, publisher),
-  ...require("./node"),
+  nrp: nrp,
+  ...require("./node")(nrp),
 };
